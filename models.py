@@ -20,7 +20,7 @@ class Pet(db.Model):
     species = db.Column(db.String(50))
     breed = db.Column(db.String(50))
     owner_id = db.Column(db.Integer(), db.ForeignKey('pet_owner.id'), nullable=False)
-    appointments = db.relationship('Appointment', backref='pet')
+    appointments = db.relationship('Appointment', backref='pet',cascade="all, delete-orphan")
 
 class Appointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)

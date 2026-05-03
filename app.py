@@ -27,12 +27,17 @@ def dashboard():
                 <strong>{owner.name}</strong> ({owner.phone}) 
                 <a href='/owner/edit/{owner.id}'>[Edit]</a> 
                 <a href='/owner/delete/{owner.id}' style='color:red;'>[Delete]</a>
-                ...
         """
         
         for pet in owner.pets:
-            output += f"<li>{pet.name} ({pet.species}) - <a href='/appointment/add/{pet.id}'>Book Appointment</a></li>"
-        
+            output += f"""
+                <li>
+                    {pet.name} ({pet.species}) 
+                    [<a href='/appointment/add/{pet.id}'>Book</a>] 
+                    [<a href='/pet/edit/{pet.id}'>Edit</a>] 
+                    [<a href='/pet/delete/{pet.id}' style='color:red;'>Delete</a>]
+                </li>
+            """
         output += f"<li><a href='/pet/add/{owner.id}'>+ Add Pet</a></li>"
         output += "</ul></div><hr>"
         
@@ -64,20 +69,6 @@ def add_owner():
     '''
 
 
-@app.route('/pet/add/<int:owner_id>', methods=['GET', 'POST'])
-def add_pet(owner_id):
-    owner = PetOwner.query.get_or_404(owner_id)
-    
-    if request.method == 'POST':
-        name = request.form.get('name')
-        species = request.form.get('species')
-        breed = request.form.get('breed')
-        
-        if name:
-            new_pet = Pet(name=name, species=species, breed=breed, owner_id=owner.id)
-            db.session.add(new_pet)
-            db.session.commit()
-            return redirect(url_for('dashboard'))
 
 @app.route('/owner/delete/<int:id>')
 def delete_owner(id):
@@ -126,6 +117,55 @@ def edit_owner(id):
         <br><a href="/">Cancel</a>
     '''
 
+@app.route('/pet/add/<int:owner_id>', methods=['GET', 'POST'])
+def add_pet(owner_id):
+    owner = PetOwner.query.get_or_404(owner_id)
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        species = request.form.get('species')
+        breed = request.form.get('breed')
+        
+        if name:
+            new_pet = Pet(name=name, species=species, breed=breed, owner_id=owner.id)
+            db.session.add(new_pet)
+            db.session.commit()
+            return redirect(url_for('dashboard'))
+
+@app.route('/pet/delete/<int:id>')
+def delete_pet(id):
+    pet = Pet.query.get_or_404(id)
+    db.session.delete(pet)
+    db.session.commit()
+    return redirect(url_for('dashboard'))
+
+@app.route('/pet/edit/<int:id>', methods=['GET', 'POST'])
+def edit_pet(id):
+    pet = Pet.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        pet.name = request.form.get('name')
+        pet.species = request.form.get('species')
+        pet.breed = request.form.get('breed')
+        
+        try:
+            db.session.commit()
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            return f"<h1>Error</h1><p>{e}</p>"
+
+    return f'''
+        <h1>Edit Pet: {pet.name}</h1>
+        <form method="POST">
+            <input type="text" name="name" value="{pet.name}" required>
+            <input type="text" name="species" value="{pet.species}">
+            <input type="text" name="breed" value="{pet.breed}">
+            <button type="submit">Update Pet</button>
+        </form>
+        <br><a href="/">Cancel</a>
+    '''
+
 @app.route('/appointment/add/<int:pet_id>', methods=['GET', 'POST'])
 def add_appointment(pet_id):
     pet = Pet.query.get_or_404(pet_id)
@@ -150,4 +190,6 @@ def add_appointment(pet_id):
     '''
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)
