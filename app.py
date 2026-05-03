@@ -25,9 +25,11 @@ def dashboard():
         output += f"""
             <div>
                 <strong>{owner.name}</strong> ({owner.phone}) 
+                <a href='/owner/edit/{owner.id}'>[Edit]</a> 
                 <a href='/owner/delete/{owner.id}' style='color:red;'>[Delete]</a>
-                <ul>
+                ...
         """
+        
         for pet in owner.pets:
             output += f"<li>{pet.name} ({pet.species}) - <a href='/appointment/add/{pet.id}'>Book Appointment</a></li>"
         
@@ -60,16 +62,7 @@ def add_owner():
             <button type="submit">Save Owner</button>
         </form>
     '''
-@app.route('/owner/delete/<int:id>')
-def delete_owner(id):
-    owner = PetOwner.query.get_or_404(id)
-    try:
-        db.session.delete(owner)
-        db.session.commit()
-        return redirect(url_for('dashboard'))
-    except Exception as e:
-        db.session.rollback()
-        return f"Error deleting owner: {e}"
+
 
 @app.route('/pet/add/<int:owner_id>', methods=['GET', 'POST'])
 def add_pet(owner_id):
@@ -85,7 +78,17 @@ def add_pet(owner_id):
             db.session.add(new_pet)
             db.session.commit()
             return redirect(url_for('dashboard'))
-            
+
+@app.route('/owner/delete/<int:id>')
+def delete_owner(id):
+    owner = PetOwner.query.get_or_404(id)
+    try:
+        db.session.delete(owner)
+        db.session.commit()
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        db.session.rollback()
+        return f"Error deleting owner: {e}"            
     return f'''
         <h1>Add Pet for {owner.name}</h1>
         <form method="POST">
@@ -94,6 +97,33 @@ def add_pet(owner_id):
             <input type="text" name="breed" placeholder="Breed">
             <button type="submit">Save Pet</button>
         </form>
+    '''
+
+@app.route('/owner/edit/<int:id>', methods=['GET', 'POST'])
+def edit_owner(id):
+    owner = PetOwner.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        owner.name = request.form.get('name')
+        owner.phone = request.form.get('phone')
+        owner.email = request.form.get('email')
+        
+        try:
+            db.session.commit()
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            return f"<h1>Update Error</h1><p>{str(e)}</p><a href='/owner/edit/{id}'>Try again</a>"
+
+    return f'''
+        <h1>Edit Owner: {owner.name}</h1>
+        <form method="POST">
+            <input type="text" name="name" value="{owner.name}" required>
+            <input type="text" name="phone" value="{owner.phone}" required>
+            <input type="email" name="email" value="{owner.email}">
+            <button type="submit">Update Info</button>
+        </form>
+        <br><a href="/">Cancel</a>
     '''
 
 @app.route('/appointment/add/<int:pet_id>', methods=['GET', 'POST'])
