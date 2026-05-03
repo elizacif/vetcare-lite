@@ -17,10 +17,26 @@ with app.app_context():
 
 @app.route('/')
 def dashboard():
-    owners = PetOwner.query.all()
-    output = "<h1>VetCare Lite Dashboard</h1>"
-    output += "<a href='/owner/add'>[+ Add New Owner]</a><hr>"
+    search_query = request.args.get('search', '') # Get what user typed in search box
     
+    if search_query:
+        owners = PetOwner.query.filter(
+            (PetOwner.name.contains(search_query)) | 
+            (PetOwner.phone.contains(search_query))
+        ).all()
+    else:
+        owners = PetOwner.query.all()
+
+    output = "<h1>VetCare Lite Dashboard</h1>"
+    output += f'''
+        <form method="GET" action="/">
+            <input type="text" name="search" placeholder="Search name or phone..." value="{search_query}">
+            <button type="submit">Search</button>
+            <a href="/">Clear</a>
+        </form>
+        <br>
+        <a href="/owner/add">[+ Add New Owner]</a><hr>
+    '''    
     for owner in owners:
         output += f"""
             <div>
