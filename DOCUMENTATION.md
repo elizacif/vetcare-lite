@@ -31,10 +31,18 @@ Staff needs:
 
 Functional Requirements - Staff View
 
-- Secure staff login (with password hashing)
-- CRUD operations for Pet Owners
-- CRUD operations for Pets (with photo upload)
-- CRUD operations for Appointments
+- Secure staff login (with password hashing) :
+  - Authentication: passwords not stored as plain text,
+  system uses the Werkzeug security library to hash passwords stored in String(128) under class User.
+
+  - Constraints: Unique applied to usernames to prevent double accounts and ensure reliable logins. 
+
+- CRUD operations for Pet Owners (stores full name, unique contact phone, optional email)
+
+- CRUD operations for Pets (includes name, species and breed. Linked via owner_id To Pet owner table)
+
+- CRUD operations for Appointments (stores DateTime object and text based reason for the visit.)
+
 - ML Symptom triage assistant
   - Staff answers 6–8 simple symptom questions
   - System predicts possible condition and urgency level (Low/Medium/High)
@@ -54,9 +62,11 @@ Non-Functional Requirements
 
 
 4. Chosen Technologies
+  4.1 Data Architecture:
+  - Database: SqLite, Flask-SQLAlchemy
+
 - Backend: Python + Flask
 - Frontend: HTML, CSS, JavaScript + Bootstrap 5
-- Database: SQLite
 - Machine Learning: scikit-learn (Decision Tree / Random Forest)
 - Public API: OpenWeatherMap API
 - Version Control: Git + GitHub

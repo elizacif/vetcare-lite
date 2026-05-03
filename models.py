@@ -1,0 +1,29 @@
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
+
+class User(db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    username = db.Column(db.String(30), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+
+class PetOwner(db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), nullable=False, unique=True)
+    email = db.Column(db.String(254))
+    pets = db.relationship('Pet', backref='owner')
+
+class Pet(db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    species = db.Column(db.String(50))
+    breed = db.Column(db.String(50))
+    owner_id = db.Column(db.Integer(), db.ForeignKey('pet_owner.id'), nullable=False)
+    appointments = db.relationship('Appointment', backref='pet')
+
+class Appointment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    datetime = db.Column(db.DateTime, nullable=False)
+    reason = db.Column(db.String(200))
+    pet_id = db.Column(db.Integer, db.ForeignKey('pet.id'), nullable=False)
