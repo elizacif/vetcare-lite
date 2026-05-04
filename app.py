@@ -54,6 +54,13 @@ def dashboard():
                     [<a href='/pet/delete/{pet.id}' style='color:red;'>Delete</a>]
                 </li>
             """
+            if pet.appointments:
+                output += "<ul>"
+                for appt in pet.appointments:
+                    pretty_date = appt.datetime.strftime('%d.%m.%Y %H:%M')
+                    output += f"<li>{pretty_date} - {appt.reason}</li>"
+        
+        output += "</ul>"
         output += f"<li><a href='/pet/add/{owner.id}'>+ Add Pet</a></li>"
         output += "</ul></div><hr>"
         
@@ -203,22 +210,42 @@ def add_appointment(pet_id):
     pet = Pet.query.get_or_404(pet_id)
 
     if request.method == 'POST':
+        date_str = request.form.get('appt_date')
         reason = request.form.get('reason')
-        new_appt = Appointment(
-            datetime=datetime.now(), 
-            reason=reason, 
-            pet_id=pet.id
-        )
-        db.session.add(new_appt)
-        db.session.commit()
-        return redirect(url_for('dashboard'))
+
+        try:
+            clean_date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
+            
+            if clean_date < datetime.now():
+                return "<h1>Error</h1><p>Insert a valid date</p><a href='javascript:history.back()'>Go Back</a>"
+
+            new_appt = Appointment(
+                datetime=clean_date, 
+                reason=reason, 
+                pet_id=pet.id
+                )
+
+            db.session.add(new_appt)
+            db.session.commit()
+            return redirect(url_for('dashboard'))
+
+        except Exception as e:
+            db.session.rollback()
+            return f"Error: {e}"
+
 
     return f'''
-        <h1>Schedule for {pet.name}</h1>
+        <h2>Schedule for {pet.name}</h2>
         <form method="POST">
-            <input type="text" name="reason" placeholder="Reason for visit" required>
-            <button type="submit">Book Appointment</button>
+            <label>Date and Time:</label><br>
+            <input type="datetime-local" name="appt_date" required><br><br>
+            
+            <label>Reason:</label><br>
+            <input type="text" name="reason" placeholder="Reason" required><br><br>
+            
+            <button type="submit">Confirm Appointment</button>
         </form>
+        <a href="/">Cancel</a>
     '''
 
 if __name__ == '__main__':
