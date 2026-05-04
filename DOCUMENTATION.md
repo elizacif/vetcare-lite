@@ -37,7 +37,7 @@ Functional Requirements - Staff View
 
   - Constraints: Unique applied to usernames to prevent double accounts and ensure reliable logins. 
 
-- CRUD operations for Pet Owners (stores full name, unique contact phone, optional email)
+- CRUD operations for Pet Owners (stores full name, unique contact phone, optional email + search n filtering algorithm)
 
 - CRUD operations for Pets (includes name, species and breed. Linked via owner_id To Pet owner table)
 

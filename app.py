@@ -17,7 +17,7 @@ with app.app_context():
 
 @app.route('/')
 def dashboard():
-    search_query = request.args.get('search', '') # Get what user typed in search box
+    search_query = request.args.get('search', '') 
     
     if search_query:
         owners = PetOwner.query.filter(
@@ -58,6 +58,22 @@ def dashboard():
         output += "</ul></div><hr>"
         
     return output
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        user = User(username=request.form.get('username'))
+        user.set_password(request.form.get('password'))
+        db.session.add(user)
+        db.session.commit()
+        return "User created successfully! <a href='/'>Go to Dashboard</a>"
+    return '''
+        <form method="POST">
+            <input name="username" placeholder="Username" required>
+            <input name="password" type="password" placeholder="Password" required>
+            <button type="submit">Register Staff</button>
+        </form>
+    '''
 
 @app.route('/owner/add', methods=['GET', 'POST'])
 def add_owner():
