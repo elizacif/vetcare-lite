@@ -3,6 +3,7 @@ from models import db, User, PetOwner, Pet, Appointment
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import os
+import requests
 
 app = Flask(__name__)
 
@@ -15,8 +16,22 @@ with app.app_context():
     db.create_all()
     print("Database woooh!")
 
+def get_weather_advice():
+    url = "https://api.open-meteo.com/v1/forecast?latitude=56.95&longitude=24.10&current_weather=true"
+    response = requests.get(url, timeout=10)
+    data = response.json()
+    
+    temp = data['current_weather']['temperature']
+    return f"The temperature is {temp}C"
+
+
 @app.route('/')
 def dashboard():
+
+    vet_tip = get_weather_advice()
+
+    output = f"<h1>{vet_tip}</h1>"
+
     search_query = request.args.get('search', '') 
     
     if search_query:
@@ -27,7 +42,7 @@ def dashboard():
     else:
         owners = PetOwner.query.all()
 
-    output = "<h1>VetCare Lite Dashboard</h1>"
+    output += "<h1>VetCare Lite Dashboard</h1>"
     output += f'''
         <form method="GET" action="/">
             <input type="text" name="search" placeholder="Search name or phone..." value="{search_query}">
