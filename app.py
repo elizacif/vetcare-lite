@@ -17,12 +17,22 @@ with app.app_context():
     print("Database woooh!")
 
 def get_weather_advice():
-    url = "https://api.open-meteo.com/v1/forecast?latitude=56.95&longitude=24.10&current_weather=true"
-    response = requests.get(url, timeout=10)
-    data = response.json()
-    
-    temp = data['current_weather']['temperature']
-    return f"The temperature is {temp}C"
+    try: 
+        url = "https://api.open-meteo.com/v1/forecast?latitude=56.95&longitude=24.10&current_weather=true"
+        response = requests.get(url, timeout=10)
+        data = response.json()
+        temp = data['current_weather']['temperature']
+        
+        if temp > 7:
+                advice = f"It's {temp}°C. Ticks are active - use tick/flea prevention!"
+        elif temp < 0:
+            advice = f"It's {temp}°C. Careful of road salt causing irritation on pet paws!"
+        else:
+            advice = f"It's {temp}°C. Standard health checks recommended."
+        return advice
+
+    except Exception:
+        return "Weather service unavailable. Ensure pets are up to date on vaccinations."
 
 
 @app.route('/')
@@ -30,7 +40,11 @@ def dashboard():
 
     vet_tip = get_weather_advice()
 
-    output = f"<h1>{vet_tip}</h1>"
+    output = f"""
+        <div margin-bottom:20px;">
+            Daily Clinic Alert: {vet_tip}
+        </div>
+    """
 
     search_query = request.args.get('search', '') 
     
@@ -58,6 +72,7 @@ def dashboard():
                 <strong>{owner.name}</strong> ({owner.phone}) 
                 <a href='/owner/edit/{owner.id}'>[Edit]</a> 
                 <a href='/owner/delete/{owner.id}' style='color:red;'>[Delete]</a>
+                <ul style="margin-top: 10px;">
         """
         
         for pet in owner.pets:
@@ -67,17 +82,19 @@ def dashboard():
                     [<a href='/appointment/add/{pet.id}'>Book</a>] 
                     [<a href='/pet/edit/{pet.id}'>Edit</a>] 
                     [<a href='/pet/delete/{pet.id}' style='color:red;'>Delete</a>]
-                </li>
+                
             """
             if pet.appointments:
                 output += "<ul>"
                 for appt in pet.appointments:
                     pretty_date = appt.datetime.strftime('%d.%m.%Y %H:%M')
                     output += f"<li>{pretty_date} - {appt.reason}</li>"
-        
-        output += "</ul>"
+                output += "</ul>"
+            
+            output += "</li>"
+            
         output += f"<li><a href='/pet/add/{owner.id}'>+ Add Pet</a></li>"
-        output += "</ul></div><hr>"
+        output += "</ul></div>"
         
     return output
 
@@ -134,15 +151,7 @@ def delete_owner(id):
     except Exception as e:
         db.session.rollback()
         return f"Error deleting owner: {e}"            
-    return f'''
-        <h1>Add Pet for {owner.name}</h1>
-        <form method="POST">
-            <input type="text" name="name" placeholder="Pet Name" required>
-            <input type="text" name="species" placeholder="Species (e.g. Dog)">
-            <input type="text" name="breed" placeholder="Breed">
-            <button type="submit">Save Pet</button>
-        </form>
-    '''
+    
 
 @app.route('/owner/edit/<int:id>', methods=['GET', 'POST'])
 def edit_owner(id):
@@ -180,11 +189,20 @@ def add_pet(owner_id):
         species = request.form.get('species')
         breed = request.form.get('breed')
         
-        if name:
-            new_pet = Pet(name=name, species=species, breed=breed, owner_id=owner.id)
-            db.session.add(new_pet)
-            db.session.commit()
-            return redirect(url_for('dashboard'))
+        new_pet = Pet(name=name, species=species, breed=breed, owner_id=owner.id)
+        db.session.add(new_pet)
+        db.session.commit()
+        return redirect(url_for('dashboard'))
+    return f'''
+        <h1>Add Pet for {owner.name}</h1>
+        <form method="POST">
+            <input type="text" name="name" placeholder="Pet Name" required>
+            <input type="text" name="species" placeholder="Species (e.g. Dog)">
+            <input type="text" name="breed" placeholder="Breed">
+            <button type="submit">Save Pet</button>
+        </form>
+        <br><a href="/">Cancel</a>
+    '''
 
 @app.route('/pet/delete/<int:id>')
 def delete_pet(id):
