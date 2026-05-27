@@ -37,6 +37,7 @@ def register():
 
         
     '''
+
 @main.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -114,12 +115,25 @@ def admin_panel():
 
         if not u.is_approved:
             output += f"""
-                <a href='/admin/approve/{u.id}'>Approve</a> |
+                <a href='/admin/approve/{u.id}'
+                    onclick="return confirm('Approve this employee account?');"
+                >
+                    Approve
+                </a> |
             """
 
         output += f"""
-                <a href='/admin/edit/{u.id}'>Edit</a> |
-                <a href='/admin/delete/{u.id}' style='color:red;'>Delete</a>
+                <a href='/admin/edit/{u.id}'
+                    onclick="return confirm('Open employee editor?');"
+                >
+                    Edit
+                </a> |
+                <a href='/admin/delete/{u.id}'
+                    style='color:red;'
+                    onclick="return confirm('Are you sure you want to delete this employee account?');"
+                >
+                    Delete
+                </a>
                 </td>
             </tr>
         """
@@ -275,7 +289,12 @@ def dashboard():
             <div>
                 <strong>{owner.name}</strong> ({owner.phone}) 
                 <a href='/owner/edit/{owner.id}'>[Edit]</a> 
-                <a href='/owner/delete/{owner.id}' style='color:red;'>[Delete]</a>
+                <a href='/owner/delete/{owner.id}'
+                    style='color:red;'
+                    onclick="return confirm('Are you sure you want to delete this owner? This will also remove pets and appointments.');"
+                    >
+                    [Delete]
+                </a>
                 <ul style="margin-top: 10px;">
         """
         
@@ -285,7 +304,12 @@ def dashboard():
                     {pet.name} ({pet.species}) 
                     [<a href='/appointment/add/{pet.id}'>Book</a>] 
                     [<a href='/pet/edit/{pet.id}'>Edit</a>] 
-                    [<a href='/pet/delete/{pet.id}' style='color:red;'>Delete</a>]
+                    [<a href='/pet/delete/{pet.id}'
+                        style='color:red;'
+                        onclick="return confirm('Delete this pet and all appointments?');"
+                    >
+                        Delete
+                    </a>]
                 
             """
             if pet.appointments:
@@ -333,8 +357,6 @@ def add_owner():
         </form>
     '''
 
-
-
 @main.route('/owner/delete/<int:id>')
 def delete_owner(id):
     if 'user_id' not in session or not User.query.get(session['user_id']).is_approved:
@@ -349,7 +371,6 @@ def delete_owner(id):
         db.session.rollback()
         return f"Error deleting owner: {e}"            
     
-
 @main.route('/owner/edit/<int:id>', methods=['GET', 'POST'])
 def edit_owner(id):
     if 'user_id' not in session or not User.query.get(session['user_id']).is_approved:
@@ -379,6 +400,8 @@ def edit_owner(id):
         </form>
         <br><a href="/">Cancel</a>
     '''
+
+
 
 @main.route('/pet/add/<int:owner_id>', methods=['GET', 'POST'])
 def add_pet(owner_id):
@@ -443,6 +466,9 @@ def edit_pet(id):
         </form>
         <br><a href="/">Cancel</a>
     '''
+
+
+
 
 @main.route('/appointment/add/<int:pet_id>', methods=['GET', 'POST'])
 def add_appointment(pet_id):
