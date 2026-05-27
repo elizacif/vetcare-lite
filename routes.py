@@ -35,12 +35,7 @@ def register():
             <button type="submit">Request Access</button>
         </form>
 
-        <script>
-            function togglePassword() {
-                const pwd = document.getElementById('password');
-                pwd.type = pwd.type === 'password' ? 'text' : 'password';
-            }
-        </script>
+        
     '''
 @main.route('/login', methods=['GET', 'POST'])
 def login():
@@ -74,13 +69,6 @@ def login():
         </form>
 
         <p>New staff? <a href="/register">Register here</a></p>
-
-        <script>
-            function togglePassword() {
-                const pwd = document.getElementById('password');
-                pwd.type = pwd.type === 'password' ? 'text' : 'password';
-            }
-        </script>
     '''
 
 @main.route('/logout')
@@ -88,24 +76,61 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('main.login'))
 
+
+
+
 @main.route('/admin/users')
 def admin_panel():
     curr_user = User.query.get(session.get('user_id'))
+
     if not curr_user or curr_user.username != 'admin':
         return "Admin only."
 
     all_users = User.query.all()
-    res += f"<br>{line}"
-    
-    for u in all_users:
-        status = "OK" if u.is_approved else "PENDING"
-        line = f"User: {u.username} [{status}]"
-        
-        if not u.is_approved:
-            url = url_for('main.approve_user', user_id=u.id)
-            line += f" <a href='{url}'>[APPROVE]</a>"
 
-    return res + "<br><br><a href='/'>Back</a>"
+    output = """
+        <h1>Employee Management</h1>
+
+        <table border='1' cellpadding='8'>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+    """
+
+    for u in all_users:
+
+        status = "Approved" if u.is_approved else "Pending"
+
+        output += f"""
+            <tr>
+                <td>{u.id}</td>
+                <td>{u.username}</td>
+                <td>{status}</td>
+                <td>
+        """
+
+        if not u.is_approved:
+            output += f"""
+                <a href='/admin/approve/{u.id}'>Approve</a> |
+            """
+
+        output += f"""
+                <a href='/admin/edit/{u.id}'>Edit</a> |
+                <a href='/admin/delete/{u.id}' style='color:red;'>Delete</a>
+                </td>
+            </tr>
+        """
+
+    output += """
+        </table>
+        <br>
+        <a href='/'>Back to Dashboard</a>
+    """
+
+    return output
 
 @main.route('/admin/approve/<int:user_id>')
 def approve_user(user_id):
@@ -117,6 +142,77 @@ def approve_user(user_id):
     u.is_approved = True
     db.session.commit()
     return redirect(url_for('main.admin_panel'))
+
+@main.route('/admin/edit/<int:user_id>', methods=['GET', 'POST'])
+def edit_user(user_id):
+    curr_user = User.query.get(session.get('user_id'))
+
+    if not curr_user or curr_user.username != 'admin':
+        return "Unauthorized"
+
+    user = User.query.get_or_404(user_id)
+
+    if request.method == 'POST':
+        user.username = request.form.get('username')
+
+        new_password = request.form.get('password')
+
+        if new_password:
+            user.set_password(new_password)
+
+        approved = request.form.get('approved')
+        user.is_approved = approved == 'yes'
+
+        db.session.commit()
+
+        return redirect(url_for('main.admin_panel'))
+
+    checked = 'checked' if user.is_approved else ''
+
+    return f'''
+        <h1>Edit Employee</h1>
+
+        <form method="POST">
+            <label>Username:</label><br>
+            <input type="text" name="username" value="{user.username}" required><br><br>
+
+            <label>New Password:</label><br>
+            <input id="password" type="password" name="password" placeholder="Leave blank to keep current password">
+            <label>
+                <input type="checkbox" onclick="togglePassword()">
+                Show Password
+            </label>
+            <br><br>
+
+            <label>
+                <input type="checkbox" name="approved" value="yes" {checked}>
+                Approved
+            </label>
+            <br><br>
+
+            <button type="submit">Save Changes</button>
+        </form>
+        <br><a href='/admin/users'>Back</a>
+    '''
+
+@main.route('/admin/delete/<int:user_id>')
+def delete_user(user_id):
+    curr_user = User.query.get(session.get('user_id'))
+
+    if not curr_user or curr_user.username != 'admin':
+        return "Unauthorized"
+
+    user = User.query.get_or_404(user_id)
+
+    if user.username == 'admin':
+        return "Cannot delete main admin account."
+
+    db.session.delete(user)
+    db.session.commit()
+
+    return redirect(url_for('main.admin_panel'))
+
+
 
 
 @main.route('/')
@@ -137,15 +233,15 @@ def dashboard():
     admin_tools = ""
 
     if user.username == 'admin':
-        admin_tools = f"<a href='/admin/users'>Manage User Approvals</a>"
-
+        admin_tools = f"""
+            <div style='margin-bottom:20px:'>
+                <a href='{url_for('main.admin_panel')}'>
+                    Employee Management Panel
+                </a>
+            </div>
+        """
 
     vet_tip = get_weather_advice()
-
-    admin_tools = ""
-    if user.username == 'admin':
-        admin_tools = f"<a href='{url_for('main.admin_panel')}'>Approve New Users</a>"
-
     output = f"""
         <div margin-bottom:20px;">
             Daily Clinic Alert: {vet_tip}
@@ -164,6 +260,7 @@ def dashboard():
 
     output += "<h1>VetCare Lite Dashboard</h1>"
     output += logged_user
+    output += admin_tools
     output += f'''
         <form method="GET" action="/">
             <input type="text" name="search" placeholder="Search name or phone..." value="{search_query}">
