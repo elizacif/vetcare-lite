@@ -2,6 +2,7 @@ from flask import Blueprint, request, redirect, url_for, session, flash
 from models import db, User, PetOwner, Pet, Appointment
 from utils import get_weather_advice
 from werkzeug.security import generate_password_hash
+from datetime import datetime
 
 main = Blueprint('main', __name__)
 
@@ -22,12 +23,25 @@ def register():
     return '''
         <h1>Register</h1>
         <form method="post">
-            <input name="username" placeholder="Username" required><br>
-            <input name="password" type="password" placeholder="Password" required><br>
+            <input name="username" placeholder="Username" required><br><br>
+            
+            <input id="password" name="password" type="password" placeholder="Password" required>
+            <label>
+                <input type="checkbox" onclick="togglePassword()">
+                Show Password
+            </label>
+            <br><br>
+            
             <button type="submit">Request Access</button>
         </form>
-    '''
 
+        <script>
+            function togglePassword() {
+                const pwd = document.getElementById('password');
+                pwd.type = pwd.type === 'password' ? 'text' : 'password';
+            }
+        </script>
+    '''
 @main.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -36,6 +50,9 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if user and user.check_password(password):
+            if not user.is_approved and user.username != 'admin':
+                return "Account pending approval."
+
             session['user_id'] = user.id
             return redirect(url_for('main.dashboard'))
     
@@ -44,11 +61,26 @@ def login():
     return '''
         <h1>Login</h1>
         <form method="post">
-            <input name="username" placeholder="Username" required><br>
-            <input name="password" type="password" placeholder="Password" required><br>
+            <input name="username" placeholder="Username" required><br><br>
+            
+            <input id="password" name="password" type="password" placeholder="Password" required>
+            <label>
+                <input type="checkbox" onclick="togglePassword()">
+                Show Password
+            </label>
+            <br><br>
+            
             <button type="submit">Login</button>
         </form>
+
         <p>New staff? <a href="/register">Register here</a></p>
+
+        <script>
+            function togglePassword() {
+                const pwd = document.getElementById('password');
+                pwd.type = pwd.type === 'password' ? 'text' : 'password';
+            }
+        </script>
     '''
 
 @main.route('/logout')
@@ -63,7 +95,7 @@ def admin_panel():
         return "Admin only."
 
     all_users = User.query.all()
-    res = "MANAGE USERS:"
+    res += f"<br>{line}"
     
     for u in all_users:
         status = "OK" if u.is_approved else "PENDING"
@@ -73,7 +105,7 @@ def admin_panel():
             url = url_for('main.approve_user', user_id=u.id)
             line += f" <a href='{url}'>[APPROVE]</a>"
 
-    return "<br><a href='/'>Back</a>"
+    return res + "<br><br><a href='/'>Back</a>"
 
 @main.route('/admin/approve/<int:user_id>')
 def approve_user(user_id):
@@ -93,6 +125,11 @@ def dashboard():
         return redirect(url_for('main.login'))
 
     user = User.query.get(session['user_id'])
+    logged_user = f"""
+        <div style='background:#eee;padding:10px;margin-bottom:15px;'>
+            Logged in as: <strong>{user.username}</strong>
+        </div>
+    """
     
     if user.username != 'admin' and not user.is_approved:
         return "<h1>Access Pending</h1>"
@@ -126,6 +163,7 @@ def dashboard():
         owners = PetOwner.query.all()
 
     output += "<h1>VetCare Lite Dashboard</h1>"
+    output += logged_user
     output += f'''
         <form method="GET" action="/">
             <input type="text" name="search" placeholder="Search name or phone..." value="{search_query}">
