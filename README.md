@@ -4,7 +4,7 @@ Vienkārša veterinārās klīnikas vadības sistēma, izstrādāta ar Python un
 
 Šis projekts tika veidots kā 12. klases programmēšanas projekta darbs, vairāk pievēršoties backend loģikai, datu bāzēm, autentifikācijai un piekļuves kontrolei, nevis frontend dizainam.
 
-Projektā netiek izmantoti HTML template faili — HTML saturs tiek renderēts Flask maršrutos, lai saglabātu vienkāršāku backend orientētu struktūru.
+Projektā netiek izmantoti HTML template faili - HTML saturs tiek renderēts Flask maršrutos, lai saglabātu vienkāršāku backend orientētu struktūru.
 
 ---
 
@@ -40,6 +40,7 @@ Projektā netiek izmantoti HTML template faili — HTML saturs tiek renderēts F
 
 
 git clone https://github.com/elizacif/vetcare-lite.git
+
 cd vetcare-lite
 
 Install nepieciešamās bibliotēkas:
